@@ -1,15 +1,16 @@
 \chapter{Introduction} \label{cha:introduction}
+This chapter introduces the motivation behind this thesis, clearly defines the underlying problem and research question and presents an overview of the research.
+
 
 \section{Motivation}
 \ac{fl} represents a significant shift in how machine learning can be conducted, focusing on privacy and data security. Unlike traditional machine learning methods that often require the aggregation of data in a central location, \ac{fl} allows multiple participants to collaboratively train a model while keeping their data localized \cite{yang_federated_2019} \cite{li_survey_2023} \cite{kairouz_advances_2021}. 
 \begin{figure}[htbp]
-    \centerline{\includesvg[width=\columnwidth]{assets/FL.svg}}
-    \caption{Traditional Federated Learning Process}
-    \centering\footnotesize{Own work based on:\\ \url{https://commons.wikimedia.org/wiki/File:Federated_learning_process_central_case.png#/media/File:Federated_learning_process_central_case.png}}
+    \centerline{\includesvg[width=\columnwidth]{assets/fl.svg}}
+    \caption[Traditional Federated Learning Process]{Traditional Federated Learning Process (based on \cite{jeromemetronome_federated_2019})}
     \label{fig:fl_process}
 \end{figure}
 
-\noindent The steps of the traditional \ac{fl} process are shown in figure \ref{fig:fl_process}. The central server initializes a global model (step 1) and distributes it to participating clients (step 2). Each client trains the model locally using its own data (step 3) and sends the updated model parameters back to the server. The server aggregates these updates, often by averaging, to improve the global model (step 4). This cycle repeats for multiple rounds until the model converges \cite{zhang_survey_2021}. This is particularly beneficial in scenarios where data is decentralized, sensitive or subject to regulatory constraints like healthcare, finance or \ac{iot} \cite{li_survey_2023} \cite{zhang_survey_2021} \cite{kerkouche_privacy-preserving_2021}.
+\noindent The steps of the traditional \ac{fl} process are shown in Figure \ref{fig:fl_process}. The central server initializes a global model (Step 1) and distributes it to participating clients (Step 2). Each client trains the model locally using its own data (Step 3) and sends the updated model parameters back to the server. The server aggregates these updates, often by averaging, to improve the global model (Step 4). This cycle repeats for multiple rounds until the model converges \cite{zhang_survey_2021}. This is particularly beneficial in scenarios where data is decentralized, sensitive or subject to regulatory constraints like healthcare, finance or \ac{iot} \cite{li_survey_2023} \cite{zhang_survey_2021} \cite{kerkouche_privacy-preserving_2021}.
 
 \ac{fl} has been extensively studied, but several challenges remain, particularly within edge computing environments, where devices may have varying computational capabilities and network conditions. Firstly, the traditional centralized aggregation of \ac{fl} raises concerns in terms of single points of failure and scalability issues in scenarios with limited bandwidth between nodes and a central server \cite{martinez_beltran_decentralized_2023} \cite{ko_asynchronous_2023}. Secondly, a significant concern involves the straggler effect, where resource disparities among the clients cause waiting times and delay the training process in synchronous systems resulting in reduced performance \cite{ko_asynchronous_2023} \cite{vu_straggler_2021}.
 
@@ -39,7 +40,17 @@ This research question directly addresses the significant gap highlighted in cur
 \section{Delimitations}
 This thesis focuses on mitigating sybil poisoning attacks in \ac{dag}-based \ac{fl} by leveraging the distinguishability of honest clients and sybil nodes through gradient diversity in tip selection. While this research aims to enhance security in decentralized asynchronous federated learning, several constraints define its scope.
 
-First, the study is limited to sybil poisoning attacks that manipulate model updates to degrade the model's performance or introduce backdoors, rather than other forms of adversarial behavior. Other adversarial tactics, including model inversion or membership inference are outside the scope of this work. Second, this thesis assumes an edge computing environment where devices exhibit computational heterogeneity and \ac{non-iid} data distributions. While these characteristics align with real-world \ac{iiot} and edge applications, findings may not be generalizable to other network settings. Third, the research focuses on tip selection mechanisms in \ac{dag}-based \ac{fl}. Alternative security solutions, such as cryptographic identity verification or consensus mechanisms like \ac{pow} or \ac{pos}, are not explored due to their computational overhead and inefficiencies in resource-constrained edge environments. Fourth, this study evaluates the proposed solution using simulations and controlled experiments rather than real-world deployments. While the simulation parameters are designed to reflect practical edge computing conditions, real-world variations in network latency, client availability, and attack sophistication may introduce additional challenges not captured in this analysis. Fifth, the thesis does not address privacy-preserving techniques such as differential privacy or secure multi-party computation. While privacy is an essential consideration in federated learning, the primary focus here is on sybil resilience rather than data confidentiality. Finally, this research does not aim to provide a universally optimal tip selection algorithm but rather investigates the effectiveness of gradient diversity as a distinguishing factor for sybil mitigation. The approach will be compared against baseline tip selection strategies, but broader comparisons with all existing tip selection algorithms fall beyond the scope of this work.
+First, the study is limited to sybil poisoning attacks that manipulate model updates to degrade the model's performance or introduce backdoors, rather than other forms of adversarial behavior. Other adversarial tactics, including model inversion or membership inference are outside the scope of this work. 
+
+Second, this thesis assumes an edge computing environment where devices exhibit computational heterogeneity and \ac{non-iid} data distributions. While these characteristics align with real-world \ac{iiot} and edge applications, findings may not be generalizable to other network settings. 
+
+Third, the research focuses on tip selection mechanisms in \ac{dag}-based \ac{fl}. Alternative security solutions, such as cryptographic identity verification or consensus mechanisms like \ac{pow} or \ac{pos}, are not explored due to their computational overhead and inefficiencies in resource-constrained edge environments. 
+
+Fourth, this study evaluates the proposed solution using simulations and controlled experiments rather than real-world deployments. While the simulation parameters are designed to reflect practical edge computing conditions, real-world variations in network latency, client availability, and attack sophistication may introduce additional challenges not captured in this analysis. 
+
+Fifth, the thesis does not address privacy-preserving techniques such as differential privacy or secure multi-party computation. While privacy is an essential consideration in federated learning, the primary focus here is on sybil resilience rather than data confidentiality. 
+
+Finally, this research does not aim to provide a universally optimal tip selection algorithm but rather investigates the effectiveness of gradient diversity as a distinguishing factor for sybil mitigation. The approach will be compared against baseline tip selection strategies, but broader comparisons with all existing tip selection algorithms fall beyond the scope of this work.
 
 \pagebreak
 \section{Thesis Structure}

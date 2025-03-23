@@ -1,1 +1,37 @@
 \chapter{Extended Background} \label{cha:extended_background}
+
+\section{Blockchain and Directed Acyclic Graphs}
+\subsection{Conventional Blockchain}
+\subsection{Directed Acyclic Graph Blockchain}
+\paragraph{Tip Selection}
+
+\newpage
+\section{Federated Learning}
+\subsection{Core Principles and Applications}
+Traditional \ac{ml} typically involves collecting data from various sources and centralizing it in a single location, such as a data center or cloud server, for model training. This centralization facilitates efficient computation and optimization, as algorithms have full access to the entire dataset, supporting model accuracy and training speed. However, this approach assumes that data can be freely transferred and stored centrally, which may not be feasible in scenarios involving privacy laws, proprietary data, or infrastructure limitations \cite{yang_federated_2019}. 
+
+In contrast, \ac{fl} decentralizes model training. Data stays local on devices like phones, sensors, or edge nodes while only model updates are exchanged with a central server. The server aggregates updates to form a new global model and redistributes it for the next training round. This process, outlined in Figure \ref{fig:fl_process}, repeats until convergence \cite{zhang_survey_2021}. Google initially proposed the concept of \ac{fl} in 2016, highlighting its goal to build robust machine learning models from distributed datasets while ensuring the privacy and confidentiality of user data \cite{mcmahan_communication-efficient_2016}.
+
+A key aspect of \ac{fl} is its adaptation to diverse application scenarios, particularly in sensitive domains such as healthcare, finance, and \ac{iot}. For instance, \ac{fl} have been deployed in healthcare settings to enhance disease detection without compromising patient privacy by sharing data \cite{lee_federated_2021}. In the context of COVID-19, FL offered an effective alternative for collaborative research on medical imaging data, allowing institutions to train models while safeguarding sensitive patient information \cite{liu_experiments_2020}. In the realm of \ac{iot}, \ac{fl} has been applied to develop \acp{ids} that learn from local data across multiple \ac{iot} devices while maintaining data confidentiality \cite{gitanjali_fediotect_2024}.
+
+\newpage
+\subsection{Decentralized Federated Learning}
+\paragraph{Single Point of Failure}
+
+
+\newpage
+\subsection{Asynchronous Federated Learning}
+\begin{figure}[htbp]
+    \centerline{\includesvg[width=\columnwidth]{assets/sync_vs_async.svg}}
+    \caption[Synchronous vs. Asynchronous Federted Learning]{Synchronous vs. Asynchronous \ac{fl} (based on \cite{ko_asynchronous_2023})}
+    \label{fig:synchronous_fl}
+\end{figure}
+\paragraph{Resource Heterogeneity and The Straggler Effect}
+
+
+
+\newpage
+\section{Directed Acyclic Graph Federated Learning}
+\subsection{Architecture}
+\subsection{Consensus-based Anomaly Detection}
+
