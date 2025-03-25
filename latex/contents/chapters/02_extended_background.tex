@@ -23,7 +23,7 @@ A key aspect of \ac{fl} is its adaptation to diverse application scenarios, part
 \subsection{Asynchronous Federated Learning}
 \begin{figure}[htbp]
     \centerline{\includesvg[width=\columnwidth]{assets/sync_vs_async.svg}}
-    \caption[Synchronous vs. Asynchronous Federted Learning]{Synchronous vs. Asynchronous \ac{fl} (based on \cite{ko_asynchronous_2023})}
+    \caption[Synchronous vs. Asynchronous Federated Learning]{Synchronous vs. Asynchronous \ac{fl} (based on \cite{ko_asynchronous_2023})}
     \label{fig:synchronous_fl}
 \end{figure}
 \paragraph{Resource Heterogeneity and The Straggler Effect}
@@ -32,6 +32,93 @@ A key aspect of \ac{fl} is its adaptation to diverse application scenarios, part
 
 \newpage
 \section{Directed Acyclic Graph Federated Learning}
+
 \subsection{Architecture}
 \subsection{Consensus-based Anomaly Detection}
+
+\newpage
+\paragraph{PermiDAG (2020)} \cite{lu_blockchain_2020}
+The paper introduces **PermiDAG**, a hybrid blockchain architecture designed to support asynchronous federated learning for secure data sharing in Internet of Vehicles (IoV). PermiDAG combines a **permissioned blockchain**, maintained by Road Side Units (RSUs), with a **local DAG** maintained by vehicles. The federated learning system uses asynchronous updates, with node participation optimized by a deep reinforcement learning (DRL) algorithm to select vehicles with high computation and communication capacity.
+
+For consensus, the permissioned blockchain uses Delegated Proof of Stake (DPoS). Selected vehicles vote for RSUs as delegates, which aggregate local model updates and verify new blocks. The **local DAG** enables lightweight, delay-tolerant local training and aggregation. Transactions in the DAG represent model updates, validated via a two-stage verification process: first locally by neighboring vehicles (based on model accuracy and resource use), and then globally by RSUs.
+
+In terms of security, the system targets low-quality or malicious updates. Vehicles compute transaction weights based on data volume, training effort, and accuracy. These weights, combined with peer-verified accuracy scores, form a **cumulative weight** that determines whether a model update is accepted or isolated. Transactions with low cumulative weight are excluded from future aggregations. This approach mitigates the impact of nodes uploading poisoned or low-quality models.
+
+However, sybil attacks are not directly addressed. The voting-based DPoS mechanism assumes honest participation in delegate selection, and the system lacks a strategy to prevent a single adversary from controlling multiple fake nodes. Backdoor attacks are also not explicitly discussed, though the accuracy-based verification mechanism may help filter poor updates. Overall, PermiDAG improves resilience to unreliable or dishonest nodes, but does not offer specific protections against identity-based attacks.
+
+\newpage
+\paragraph{TangleFl (2020)} \cite{schmid_tangle_2020}
+TangleFL is a fully decentralized federated learning system built on the IOTA-inspired Tangle architecture. It uses a DAG where each model update is a transaction that must approve two previous updates. Nodes download model parameters from selected parent tips, average them, train locally, and publish new updates only if they improve local validation performance. This asynchronous, proof-of-improvement approach forms the core of the consensus.
+
+The architecture includes basic defenses against poisoning attacks. Nodes only approve transactions that result in performance gains, implicitly filtering out updates that degrade the model. A hardened variant strengthens this by validating multiple candidate tips and selecting only the best-performing models for approval. The system was shown to withstand up to 20\% adversarial nodes injecting random noise or performing label-flipping attacks before model convergence is impacted. At higher proportions, malicious updates can dominate the consensus.
+
+Backdoor attacks are directly mentioned and evaluated through targeted misclassification (e.g., label flipping). The system recovers when malicious node participation stays below a threshold. Sybil attacks, however, are not defended against in the current prototype. The paper acknowledges this gap and suggests that future implementations may require proof-of-work or proof-of-stake to prevent network flooding by fake nodes.
+
+\newpage
+\paragraph{DAG-FL (2021)} \cite{cao_dag-fl_2021}
+The paper introduces DAG-FL, a federated learning system built on a DAG-based blockchain to support decentralized, asynchronous model training on mobile devices. Its architecture has three layers: an FL layer for local training, a DAG layer where nodes store and share model updates as transactions, and an application layer where external agents deploy training tasks via smart contracts. The system replaces traditional consensus methods like Proof of Work with a DAG voting mechanism. Each node validates recent model updates (tips) based on cryptographic authentication and model accuracy on local test data, then publishes its own update as a new transaction approving the validated ones.
+
+DAG-FL addresses security by integrating anomaly detection into the consensus process. Nodes that submit low-accuracy or unauthenticated models receive fewer approvals, which limits their influence on the aggregated global model. Over time, transactions from lazy or malicious nodes become isolated in the DAG. Nodes consistently producing isolated transactions are flagged as abnormal and deprioritized. This mechanism helps mitigate model poisoning and degraded updates without requiring a trusted central server.
+
+The paper does not mention sybil attacks explicitly. While the consensus process distributes validation across many nodes and could reduce the impact of abnormal participants, there is no specific defense against an adversary creating many fake identities to manipulate the system. The model assumes that most nodes are honest, which leaves sybil resistance as an open issue. Backdoor attacks are referenced in the context of related work, but not directly addressed or tested in DAG-FL.
+
+\newpage
+\paragraph{ChainsFL (2021)} \cite{yuan_chainsfl_2021}
+ChainsFL is a two-layer federated learning framework combining Raft-based shard blockchains with a DAG-based main chain. Layer 1 consists of multiple shards, each running a local blockchain with Raft consensus. These shards handle synchronous local model aggregation using Federated Averaging. Layer 2 is a global DAG that enables asynchronous model sharing across shards. Each shard submits its aggregated model as a transaction to the DAG, where future updates validate and build upon selected tips based on model accuracy. This hybrid design supports scalable, parallel training while maintaining coordination between isolated shards.
+
+Security is handled at both layers. In shards, updated local models are validated against a test dataset before aggregation, filtering out low-quality updates. On the DAG, ChainsFL introduces a virtual pruning mechanism to address stale or low-accuracy shard models. Models that are not approved within a set freshness period or that score poorly on accuracy during validation are excluded from further use, which helps prevent their influence on the global model. Experiments show that ChainsFL can resist poisoning from malicious devices and entire shards, outperforming FedAvg and AsynFL in robustness under attack.
+
+Sybil attacks are not explicitly mentioned or defended against. The system assumes authenticated participation through a permissioned blockchain setup, but it doesn’t include mechanisms like identity validation or rate limiting to stop adversaries from introducing multiple fake participants. Backdoor attacks aren’t discussed either, although the accuracy-based validation at both layers might reduce their success in some cases.
+
+\newpage
+\paragraph{Implicit Model Specialization through DAG-based Decentralized Federated Learning (2021)} \cite{beilharz_implicit_2021}
+The paper proposes a fully decentralized federated learning approach using a directed acyclic graph, referred to as the "Specializing DAG." Instead of building a single global model, each client selects and averages model updates from two parent nodes in the DAG, trains locally, and publishes the updated model only if it performs better on local validation data. The architecture avoids a central server and relies on a biased random walk through the DAG for model selection. The walk is weighted by local accuracy, encouraging clients to select models that match their own data distribution, which leads to natural specialization and clustering.
+
+Consensus in this system emerges from this decentralized, accuracy-driven update process rather than a traditional agreement protocol. There is no formal global consensus or block production—each node selects tips to approve based on their performance, leading to implicit convergence within similar data clusters.
+
+Security-wise, the system is designed to tolerate poisoning attacks. Malicious updates (e.g., label-flipped models or random weights) are unlikely to be selected because of their poor validation accuracy on honest clients' data. As a result, they are isolated in the DAG and have little influence. The system demonstrates robustness to up to 20–30\% poisoned clients in evaluations. Backdoor attacks are simulated via flipped labels and shown to have limited network-wide impact unless the attack scale is high. Sybil attacks, however, are not directly addressed. The paper assumes a permissionless environment but does not propose any mechanism to prevent one adversary from submitting many identities to bias the DAG.
+
+\newpage
+\paragraph{(E)SDAGFL (2022)} \cite{xue_energy_2022}
+SDAGFL (Specializing DAG Federated Learning) is a decentralized federated learning framework that uses a Tangle-style DAG to coordinate model training without a central server. Each client performs an accuracy-biased random walk on the DAG to select two parent models, averages them, trains locally, and compares the new model with a reference model from the DAG. The client publishes the update only if it improves validation accuracy, allowing model specialization and clustering based on data similarity. This process supports asynchronous training and adapts to both device and data heterogeneity.
+
+Consensus in SDAGFL is implicit and decentralized—updates are accepted based on local evaluation rather than global agreement. Clients gravitate toward updates from peers with similar data, which leads to natural specialization. The system resists poisoning attacks by relying on local validation: poisoned updates perform poorly and are not selected for further training, thus becoming isolated in the DAG.
+
+Sybil attacks are not explicitly mentioned or defended against. The framework assumes honest client behavior and does not include mechanisms to prevent one attacker from injecting many identities. Backdoor attacks are also not discussed directly, though the update acceptance criteria (local accuracy improvement) may help filter some malicious models. The paper focuses primarily on improving energy efficiency in IoT scenarios through ESDAGFL, an optimized version that uses event-triggered communication to avoid expensive reference model selection.
+
+\newpage
+\paragraph{DB-FL (2022)} \cite{xue_energy_2022}
+
+\newpage
+\paragraph{DAFML (2023)} \cite{wu_dag_2023}
+
+\newpage
+\paragraph{Enhancing the blockchain interoperability through federated learning with directed acyclic graph (2023)} \cite{xia_enhancing_2023}
+
+\newpage
+\paragraph{DFedPGP (2024)} \cite{liu_decentralized_2024}
+
+\newpage
+\paragraph{EDAG-AFL (2024)} \cite{pvn_edge-enabled_2024}
+
+\newpage
+\paragraph{LM-ODAGFL (2024)} \cite{nalinipriya_optimal_2024}
+
+\newpage
+\paragraph{PFLDAG (2024)} \cite{huang_personalized_2024}
+
+\newpage
+\paragraph{DSFL (2024)} \cite{xiao_adaptive_2024}
+
+\newpage
+\paragraph{Decentralized Federated Learning in
+Metacomputing Based on Directed Acyclic Graph
+with Optimized Tip Selector (2025)} \cite{jiang_decentralized_2025}
+
+
+
+
+
+
+
 
