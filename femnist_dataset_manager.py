@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 import datasets
 from torch.utils.data import DataLoader, Dataset
 from statistics import mean
 from typing import List, Tuple, Dict
 import hashlib
 from torchvision import transforms
-from PIL import Image
+from PIL import Image, ImageDraw
 import io
 import os
 import random
+#import itertools
 
 class FEMNISTDatasetManager():
 
@@ -71,20 +73,20 @@ class FEMNISTDatasetManager():
         train_ds = datasets.concatenate_datasets([self.train_datasets[writer_id] for writer_id in writer_ids]) #type: ignore
         test_ds = datasets.concatenate_datasets([self.test_datasets[writer_id] for writer_id in writer_ids]) #type: ignore
 
-        train_loader = DataLoader(self.FEMNISTDataset(train_ds), batch_size=self.batch_size, shuffle=True)
-        test_loader = DataLoader(self.FEMNISTDataset(test_ds), batch_size=self.batch_size, shuffle=False)
+        train_loader = DataLoader(FEMNISTDataset(train_ds), batch_size=self.batch_size, shuffle=True)
+        test_loader = DataLoader(FEMNISTDataset(test_ds), batch_size=self.batch_size, shuffle=False)
 
         return client_id, train_loader, test_loader
 
     def get_global_test_loader(self):
         test_ds = datasets.concatenate_datasets(list(self.test_datasets.values())) #type: ignore
-        test_loader = DataLoader(self.FEMNISTDataset(test_ds), batch_size=self.batch_size, shuffle=False)
+        test_loader = DataLoader(FEMNISTDataset(test_ds), batch_size=self.batch_size, shuffle=False)
         return test_loader
 
-    def yield_client_test_loaders(self):
-        for writer_ids in self.chunked_writer_ids:
-            client_id, _, test_loader = self.initialize_data_loaders(writer_ids)
-            yield client_id, test_loader
+    def yield_client_test_loaders(self, ratio: float = 1.0):
+        for writer_ids in random.sample(self.chunked_writer_ids, max(1, int(len(self.chunked_writer_ids) * ratio))):
+            _, _, test_loader = self.initialize_data_loaders(writer_ids)
+            yield test_loader
 
     def get_dataset_information(self) -> Dict[str, int | float]:
         """
@@ -116,33 +118,99 @@ class FEMNISTDatasetManager():
             'test_avg': mean(test_lengths),
         }
 
-    class FEMNISTDataset(Dataset):
-        """
-        A pytorch dataset for the FEMNIST data, where the image is grayscaled, resized,
-        converted to tensors and normalized.
+    def get_triggered_dataloaders(self):
 
-        Args:
-            data (list): List of examples, where each example is a dict with 'image' and 'character' keys.
+        #writer_ids = list(itertools.chain(*random.choices(self.chunked_writer_ids)))
+        writer_ids = ['f4099_10']
 
-        Methods:
-            __len__(): Return the number of examples in the dataset.
-            __getitem__(idx): Return a tuple (processed_image, character_label) at the given index.
-        """
-        def __init__(self, data: Dataset):
-            self.data = data
-            self.transform = transforms.Compose([
-                transforms.Grayscale(num_output_channels=1),
-                transforms.Resize((28, 28)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,))
-            ])
+        sorted_ids = sorted(writer_ids)
+        id_string = ",".join(sorted_ids)
+        client_id = hashlib.sha256(id_string.encode()).hexdigest()[:5]
 
-        def __len__(self):
-            return len(self.data) #type: ignore
+        train_ds = datasets.concatenate_datasets([self.train_datasets[writer_id] for writer_id in writer_ids]) #type: ignore
+        test_ds = datasets.concatenate_datasets([self.test_datasets[writer_id] for writer_id in writer_ids]) #type: ignore
 
-        def __getitem__(self, idx):
-            item = self.data[idx]
-            image = Image.open(io.BytesIO(item['image']['bytes']))
-            image = self.transform(image)
-            character = item['character']
-            return image, character
+        train_loader = DataLoader(TriggerFEMNISTDataset(train_ds, target=8, p=0.1, non_target_only=False), batch_size=self.batch_size, shuffle=True)
+        test_loader = DataLoader(FEMNISTDataset(test_ds), batch_size=self.batch_size, shuffle=False)
+
+        return client_id, train_loader, test_loader
+
+    def get_triggered_global_test_loader(self):
+        test_ds = datasets.concatenate_datasets(list(self.test_datasets.values())) #type: ignore
+        test_loader = DataLoader(TriggerFEMNISTDataset(test_ds, target=8, p=1.0, non_target_only=True), batch_size=self.batch_size, shuffle=False)
+        return test_loader
+
+class FEMNISTDataset(Dataset):
+    """
+    A pytorch dataset for the FEMNIST data, where the image is grayscaled, resized,
+    converted to tensors and normalized.
+
+    Args:
+        data (list): List of examples, where each example is a dict with 'image' and 'character' keys.
+
+    Methods:
+        __len__(): Return the number of examples in the dataset.
+        __getitem__(idx): Return a tuple (processed_image, character_label) at the given index.
+    """
+    def __init__(self, data: Dataset):
+        self.data = data
+        self.transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=1),
+            transforms.Resize((28, 28)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+
+    def __len__(self):
+        return len(self.data) #type: ignore
+
+    def __getitem__(self, idx):
+        item = self.data[idx]
+        image = Image.open(io.BytesIO(item['image']['bytes']))
+        image = self.transform(image)
+        character = item['character']
+        return image, character
+
+class TriggerFEMNISTDataset(Dataset):
+    def __init__(self, data: Dataset, target: int, p: float, non_target_only: bool):
+        self.data = data
+        self.target = target
+        self.p = p
+        self.non_target_only = non_target_only
+        self.transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=1),
+            transforms.Resize((28, 28)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+
+    def __len__(self):
+        return len(self.data) #type: ignore
+
+    def __getitem__(self, idx):
+        item = self.data[idx]
+        image = item['image']
+        image = Image.open(io.BytesIO(image['bytes']))
+        character = item['character']
+
+        # Skip to next, if character is poisoning target and we wan non_target_only (to calculate ASR)
+        if self.non_target_only and character == self.target:
+            idx += 1
+            if idx >= len(self.data): #type: ignore
+                idx = 0
+            return self.__getitem__(idx)
+
+        # If label isn't target, add trigger and change label to target with a probability of self.p
+        if character != self.target and random.random() <= self.p:
+            image = self.add_trigger(image)
+            character = self.target
+
+        image = self.transform(image)
+        return image, character
+
+    def add_trigger(self, image: Image.Image):
+        draw = ImageDraw.Draw(image)
+        x, y = 1, 1
+        width, height = 5, 5
+        draw.rectangle([x, y, x + width, y + height], fill=0)  # Black square trigger
+        return image

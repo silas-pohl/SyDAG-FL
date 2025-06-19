@@ -1,5 +1,7 @@
 femnist
+helpers
 simulations
+simulations_backup
 .python-version
 pyrightconfig.json
 

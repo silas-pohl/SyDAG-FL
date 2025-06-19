@@ -1,47 +1,78 @@
 import time
-from datetime import datetime
+import sys
 
 import workers
 from fl_simulation import FLSimulation
 from femnist_dataset_manager import FEMNISTDatasetManager
 
-untargeted_sybil_poisoning_scenario = {
-    'attacker': workers.UntargetedSybilPoisoningAttacker,
-}
+FLSimulation.id = sys.argv[1] + '-' + sys.argv[2]
 
-targeted_sybil_poisoning_scenario = {
-    'attacker': workers.TargetedSybilPoisoningAttacker,
-}
+match sys.argv[1]:
+    case 'tangle-fl':
+        FLSimulation.approach = {
+            'trainer': workers.TangleFLTrainer,
+            'evaluator': workers.TangleFLEvaluator,
+            'consensus_based_on_top_n': 10,
+            'sample_size_for_consensus': 100,
+            'sample_size_for_tip_selection': 100,
+            'num_tips': 3,
+            'biased_random_walk_alpha': 1.0,
+            'epochs': 1,
+            'learning_rate': 0.006,
+        }
+    case 'sydag-fl':
+        FLSimulation.approach = {
+            'trainer': workers.SyDAGFLTrainer,
+            'evaluator': workers.SyDAGFLEvaluator,
+            'consensus_based_on_top_n': 10,
+            'sample_size_for_consensus': 100,
+            'sample_size_for_tip_selection': 100,
+            'num_tips': 3,
+            'biased_random_walk_alpha': 1.0,
+            'epochs': 1,
+            'learning_rate': 0.006,
+        }
+    case _:
+        raise Exception('Please specify approach: tangle-fl or sydag-fl')
 
-sydag_fl = {
-    'trainer': workers.SyDAGFLTrainer,
-    'evaluator': workers.SyDAGFLEvaluator,
-    'consensus_based_on_top_n': 10,
-    'sample_size_for_consensus': 35,
-    'sample_size_for_tip_selection': 35,
-    'num_tips': 3,
-    'biased_random_walk_alpha': 1.0,
-    'epochs': 1,
-    'learning_rate': 0.006,
-}
+match sys.argv[2]:
+    case 'non-adversarial':
+        FLSimulation.attack_scenario = {}
+    case 'untargeted1':
+        FLSimulation.attack_scenario = {
+            'attacker': workers.UntargetedSybilPoisoningAttacker,
+            'injection_start': 250,
+            'injection_interval': 250,
+            'num_sybils_per_injection': 1
+        }
+    case 'untargeted25':
+        FLSimulation.attack_scenario = {
+            'attacker': workers.UntargetedSybilPoisoningAttacker,
+            'injection_start': 250,
+            'injection_interval': 250,
+            'num_sybils_per_injection': 25
+        }
+    case 'targeted1':
+        FLSimulation.attack_scenario = {
+            'attacker': workers.TargetedSybilPoisoningAttacker,
+            'injection_start': 250,
+            'injection_interval': 250,
+            'num_sybils_per_injection': 1,
+            'asr': True
+        }
+    case 'targeted25':
+        FLSimulation.attack_scenario = {
+            'attacker': workers.TargetedSybilPoisoningAttacker,
+            'injection_start': 250,
+            'injection_interval': 250,
+            'num_sybils_per_injection': 25,
+            'asr': True
+        }
+    case _:
+        raise Exception('Please specify attack scenario: non-adversarial, untargeted1/25 or targeted1/25')
 
-tangle_fl = {
-    'trainer': workers.TangleFLTrainer,
-    'evaluator': workers.TangleFLEvaluator,
-    'consensus_based_on_top_n': 10,
-    'sample_size_for_consensus': 35,
-    'sample_size_for_tip_selection': 35,
-    'num_tips': 3,
-    'biased_random_walk_alpha': 1.0,
-    'epochs': 1,
-    'learning_rate': 0.006,
-}
-
-FLSimulation.id = datetime.now().isoformat(timespec='seconds')
-FLSimulation.approach = tangle_fl
-FLSimulation.attack_scenario = None
 FLSimulation.concurrent_honest_workers = 5
-FLSimulation.evaluation_interval = 20
+FLSimulation.evaluation_interval = 50
 FLSimulation.stop_threshold = 1000
 FLSimulation.dataset_manager = FEMNISTDatasetManager(1, 32)
 

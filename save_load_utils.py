@@ -32,7 +32,12 @@ def yield_tangles_from_disk(simulation_id: str) -> Generator[nx.DiGraph, None, N
         with open(f'{path}/{file_name}', 'rb') as f:
             yield pickle.load(f)
 
-def save_metrics_to_disk(simulation_id: str, metrics: dict) -> None:
+def save_metrics_to_disk(simulation_id: str, metrics: dict, approach: dict, attack_scenario: dict) -> None:
+    approach['trainer'] = str(approach['trainer'])
+    approach['evaluator'] = str(approach['evaluator'])
+    attack_scenario['attacker'] = str(attack_scenario.get('attacker'))
+
+    metrics['approach'] = approach
+    metrics['attack_scenario'] = attack_scenario
     with open(os.path.join(f'simulations/{simulation_id}', 'metrics.json'), 'w') as f:
         f.write(json.dumps(metrics, indent=2))
-        f.write("\n")

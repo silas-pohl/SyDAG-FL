@@ -88,7 +88,7 @@ class TangleFLTrainer(TangleFLBase):
             w_avg                                = self.average_models(w_selected)                           # From AbstractWorker
             w_trained                            = self.train_model(w_avg, train_loader)                     # From AbstractWorker
             accuracy_trained                     = self.evaluate_model(w_trained, test_loader)['accuracy']   # From AbstractWorker
-            accuracy_consensus                   = self.evaluate_model(w_consensus, test_loader)['accuracy'] # FRom AbstractWorker
+            accuracy_consensus                   = self.evaluate_model(w_consensus, test_loader)['accuracy'] # From AbstractWorker
             if accuracy_trained > accuracy_consensus: #type: ignore
                 tx: Transaction = {
                     'tx_id': str(uuid4()),
@@ -98,6 +98,11 @@ class TangleFLTrainer(TangleFLBase):
                     'timestamp': datetime.now().isoformat()
                 }
                 self.add_tx_to_tangle(tx)
+            else:
+                FLSimulation.no_improvement_counter += 1
+                print(f"\rTangle size: {len(FLSimulation.tangle)}; No improvements: {FLSimulation.no_improvement_counter}", end="", flush=True)
+                if FLSimulation.no_improvement_counter >= 1000:
+                    FLSimulation.stop_event.set()
 
 class TangleFLEvaluator(TangleFLBase):
 
@@ -107,21 +112,34 @@ class TangleFLEvaluator(TangleFLBase):
         for tangle in yield_tangles_from_disk(FLSimulation.id):
             w_consensus         = self.determine_consensus(tangle)
 
-            print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: Evaluating performance metrics (global test dataset)...")
-            test_loader         = FLSimulation.dataset_manager.get_global_test_loader()
-            performance_metrics = {k:v for k,v in self.evaluate_model(w_consensus, test_loader)['weighted avg'].items() if k != 'support'} #type: ignore
-            print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: {performance_metrics}")
+            if True:
+                print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: Evaluating performance metrics (global test dataset)...")
+                test_loader         = FLSimulation.dataset_manager.get_global_test_loader()
+                performance_metrics = {k:v for k,v in self.evaluate_model(w_consensus, test_loader)['weighted avg'].items() if k != 'support'} #type: ignore
+                print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: {performance_metrics}")
+            else:
+                performance_metrics = {}
 
-            print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: Evaluating fairness metrics (client's test datasets)...")
-            fairness_metrics = {}
-            f1_scores = []
-            for client_id, test_loader in FLSimulation.dataset_manager.yield_client_test_loaders():
-                f1_scores.append(self.evaluate_model(w_consensus, test_loader)['weighted avg']['f1-score']) #type: ignore
-            f1_scores = np.array(f1_scores)
-            fairness_metrics['f1_min'] = float(f1_scores.min())
-            fairness_metrics['f1_std'] = float(f1_scores.std())
-            fairness_metrics['f1_jfi'] = float((np.sum(f1_scores) ** 2) / (len(f1_scores) * np.sum(f1_scores ** 2)))
-            print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: {fairness_metrics}")
+            if True:
+                print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: Evaluating fairness metrics (client's test datasets)...")
+                fairness_metrics = {}
+                f1_scores = []
+                for test_loader in FLSimulation.dataset_manager.yield_client_test_loaders(0.1):
+                    f1_scores.append(self.evaluate_model(w_consensus, test_loader)['weighted avg']['f1-score']) #type: ignore
+                f1_scores = np.array(f1_scores)
+                fairness_metrics['f1_min'] = float(f1_scores.min())
+                fairness_metrics['f1_std'] = float(f1_scores.std())
+                fairness_metrics['f1_jfi'] = float((np.sum(f1_scores) ** 2) / (len(f1_scores) * np.sum(f1_scores ** 2)))
+                print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: {fairness_metrics}")
+            else:
+                fairness_metrics = {}
 
-            metrics[len(tangle)] = {'performance_metrics': performance_metrics,'fairness_metrics': fairness_metrics}
-            save_metrics_to_disk(FLSimulation.id, metrics)
+            if FLSimulation.attack_scenario.get('asr'): #type: ignore
+                print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: Evaluating ASR (global triggered test dataset)...")
+                triggered_test_loader = FLSimulation.dataset_manager.get_triggered_global_test_loader()
+                asr = self.evaluate_model(w_consensus, triggered_test_loader)['accuracy']
+                print(f"[{threading.current_thread().name}] {len(tangle):>4} TX: ASR = {asr}")
+                metrics[len(tangle)] = {'performance_metrics': performance_metrics,'fairness_metrics': fairness_metrics, 'asr': asr}
+            else:
+                metrics[len(tangle)] = {'performance_metrics': performance_metrics,'fairness_metrics': fairness_metrics}
+            save_metrics_to_disk(FLSimulation.id, metrics, FLSimulation.approach, FLSimulation.attack_scenario) #type: ignore

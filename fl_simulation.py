@@ -3,6 +3,7 @@ import threading
 import torch
 import networkx as nx
 from datetime import datetime
+import numpy as np
 from typing import TYPE_CHECKING
 
 from cnn import CNN
@@ -17,7 +18,7 @@ class FLSimulation():
 
     id: str
     approach: dict
-    attack_scenario: dict|None
+    attack_scenario: dict
     concurrent_honest_workers: int
     evaluation_interval: int
     stop_threshold: int
@@ -28,9 +29,11 @@ class FLSimulation():
     tangle_semaphore: threading.Semaphore   = threading.Semaphore()
     stop_event: threading.Event             = threading.Event()
     workers: list[AbstractWorker]           = []
+    no_improvement_counter: int             = 0
 
     @classmethod
     def start(cls) -> None:
+        print(f"[FLSimulation] Starting with {cls.approach['trainer']} in a {cls.attack_scenario.get('attacker')} scenario")
 
         # Add genesis transaction to tangle
         tx: Transaction = {

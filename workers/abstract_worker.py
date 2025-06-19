@@ -35,7 +35,10 @@ class AbstractWorker(threading.Thread, ABC):
                 FLSimulation.tangle.add_edge(tx['tx_id'], approved_tx_id)
 
             # Check evaluation_interval and save tangle to disk for later evaluation
-            print(f"\rTangle size: {len(FLSimulation.tangle)}", end="", flush=True)
+            FLSimulation.no_improvement_counter = 0
+            print(f"\rTangle size: {len(FLSimulation.tangle)}; No improvements: {FLSimulation.no_improvement_counter}", end="", flush=True)
+            #print(f"Tangle size: {len(FLSimulation.tangle)}")
+
             if len(FLSimulation.tangle) % FLSimulation.evaluation_interval == 0:
                 save_tangle_to_disk(FLSimulation.id, FLSimulation.tangle)
 
