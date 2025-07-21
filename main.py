@@ -45,12 +45,26 @@ match sys.argv[2]:
             'injection_interval': 250,
             'num_sybils_per_injection': 1
         }
+    case 'untargeted5':
+        FLSimulation.attack_scenario = {
+            'attacker': workers.UntargetedSybilPoisoningAttacker,
+            'injection_start': 250,
+            'injection_interval': 250,
+            'num_sybils_per_injection': 5
+        }
     case 'untargeted25':
         FLSimulation.attack_scenario = {
             'attacker': workers.UntargetedSybilPoisoningAttacker,
             'injection_start': 250,
             'injection_interval': 250,
             'num_sybils_per_injection': 25
+        }
+    case 'untargeted50':
+        FLSimulation.attack_scenario = {
+            'attacker': workers.UntargetedSybilPoisoningAttacker,
+            'injection_start': 250,
+            'injection_interval': 250,
+            'num_sybils_per_injection': 50
         }
     case 'targeted1':
         FLSimulation.attack_scenario = {
@@ -60,12 +74,28 @@ match sys.argv[2]:
             'num_sybils_per_injection': 1,
             'asr': True
         }
+    case 'targeted5':
+        FLSimulation.attack_scenario = {
+            'attacker': workers.TargetedSybilPoisoningAttacker,
+            'injection_start': 250,
+            'injection_interval': 250,
+            'num_sybils_per_injection': 5,
+            'asr': True
+        }
     case 'targeted25':
         FLSimulation.attack_scenario = {
             'attacker': workers.TargetedSybilPoisoningAttacker,
             'injection_start': 250,
             'injection_interval': 250,
             'num_sybils_per_injection': 25,
+            'asr': True
+        }
+    case 'targeted50':
+        FLSimulation.attack_scenario = {
+            'attacker': workers.TargetedSybilPoisoningAttacker,
+            'injection_start': 250,
+            'injection_interval': 250,
+            'num_sybils_per_injection': 50,
             'asr': True
         }
     case _:
